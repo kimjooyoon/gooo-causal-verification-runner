@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CI_OUTPUT_NAME: gooo-causal-verification-runner-${{ github.run_id }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Check out the subject
         uses: actions/checkout@v5
