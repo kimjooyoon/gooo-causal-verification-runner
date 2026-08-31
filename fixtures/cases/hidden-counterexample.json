@@ -1,0 +1,25 @@
+{
+  "schema":"gooo/causal-verification-runner/case/v1",
+  "case_id":"hidden-counterexample",
+  "description":"A hidden false-negative counterexample and a selective/full-oracle mismatch refute reuse.",
+  "change_claim":{"claim_id":"claim-hidden-impact","changed_predicates":["predicate:root"],"source_digest":"$SOURCE_DIGEST","semantic_digest":"$SEMANTIC_DIGEST"},
+  "semantic_graph":{"schema":"gooo-graph/v1","graph_id":"graph-hidden-counterexample","source_digest":"$SOURCE_DIGEST","semantic_digest":"$SEMANTIC_DIGEST","graph_digest":"$GRAPH_DIGEST","predicates":["predicate:root","predicate:hidden"],"edges":[
+    {"edge_id":"edge-root-test","from":"predicate:root","to":"test:root","kind":"predicate-to-test","status":"KNOWN"},
+    {"edge_id":"edge-hidden-test","from":"predicate:hidden","to":"test:hidden","kind":"predicate-to-test","status":"KNOWN"}
+  ]},
+  "tests":[
+    {"test_id":"test_root","target_node":"test:root","command":["go","test","./...","-run","TestRoot"],"observation":{"status":"PASS","wall_ms":20,"peak_rss_kib":130,"result_digest":"sha256:5555555555555555555555555555555555555555555555555555555555555555"}},
+    {"test_id":"test_hidden","target_node":"test:hidden","command":["go","test","./...","-run","TestHidden"]}
+  ],
+  "reusable_proofs":[
+    {"proof_id":"proof-hidden-laundered","test_id":"test_hidden","source_digest":"$SOURCE_DIGEST","source_tree_digest":"$SOURCE_TREE_DIGEST","semantic_digest":"$SEMANTIC_DIGEST","graph_digest":"$GRAPH_DIGEST","toolchain_digest":"$TOOLCHAIN_DIGEST","scenario_digest":"$SCENARIO_DIGEST","test_inventory_digest":"$TEST_INVENTORY_DIGEST","command_digest":"$COMMAND_DIGEST","terminal_result":"PASS","result_digest":"sha256:6666666666666666666666666666666666666666666666666666666666666666","release":{"provider":"github","repository":"kimjooyoon/gooo-causal-verification-runner","release_id":1,"tag":"v0.1.0","self_asserted_immutable":true,"platform_immutable":true,"asset_digest":"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","asset_name":"gooo-causal-verification-runner-v0.1.0.tar.gz"}}
+  ],
+  "full_oracle":{"oracle_id":"oracle-hidden-counterexample","independent":true,"digest":"$FULL_ORACLE_DIGEST","results":[
+    {"test_id":"test_root","status":"PASS","result_digest":"sha256:5555555555555555555555555555555555555555555555555555555555555555"},
+    {"test_id":"test_hidden","status":"FAIL","result_digest":"sha256:7777777777777777777777777777777777777777777777777777777777777777"}
+  ]},
+  "performance_pair":{"before":{"source_digest":"$SOURCE_DIGEST","toolchain_digest":"$TOOLCHAIN_DIGEST","scenario_digest":"$SCENARIO_DIGEST","wall_ms":100,"peak_rss_kib":200},"after":{"source_digest":"$SOURCE_DIGEST","toolchain_digest":"$TOOLCHAIN_DIGEST","scenario_digest":"$SCENARIO_DIGEST","wall_ms":65,"peak_rss_kib":175}},
+  "counterexamples":[{"counterexample_id":"hidden-impact-01","test_id":"test_hidden","expected_invalidation":true,"observed_invalidation":false}],"cache_hit":true,
+  "expected":{"decision":"REFUTED","selection_mode":"CAUSAL_SELECT","total_tests":2,"selected":1,"executed":1,"reused":1,"full_oracle_executed":2,"failures":1,"unknowns":0,"avoided_executions":1,"invalidated_edge_count":1}
+}
+

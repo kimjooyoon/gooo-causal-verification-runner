@@ -1,0 +1,25 @@
+{
+  "schema":"gooo/causal-verification-runner/case/v1",
+  "case_id":"safe-reuse",
+  "description":"A known semantic change executes the affected test and reuses an exact immutable proof for an unaffected test.",
+  "change_claim":{"claim_id":"claim-price-change","changed_predicates":["predicate:price"],"source_digest":"$SOURCE_DIGEST","semantic_digest":"$SEMANTIC_DIGEST"},
+  "semantic_graph":{"schema":"gooo-graph/v1","graph_id":"graph-safe-reuse","source_digest":"$SOURCE_DIGEST","semantic_digest":"$SEMANTIC_DIGEST","graph_digest":"$GRAPH_DIGEST","predicates":["predicate:price","predicate:format"],"edges":[
+    {"edge_id":"edge-price-test","from":"predicate:price","to":"test:price","kind":"predicate-to-test","status":"KNOWN"},
+    {"edge_id":"edge-format-test","from":"predicate:format","to":"test:format","kind":"predicate-to-test","status":"KNOWN"}
+  ]},
+  "tests":[
+    {"test_id":"test_price","target_node":"test:price","command":["go","test","./...","-run","TestPrice"],"observation":{"status":"PASS","wall_ms":18,"peak_rss_kib":120,"result_digest":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+    {"test_id":"test_format","target_node":"test:format","command":["go","test","./...","-run","TestFormat"]}
+  ],
+  "reusable_proofs":[
+    {"proof_id":"proof-format-v1","test_id":"test_format","source_digest":"$SOURCE_DIGEST","source_tree_digest":"$SOURCE_TREE_DIGEST","semantic_digest":"$SEMANTIC_DIGEST","graph_digest":"$GRAPH_DIGEST","toolchain_digest":"$TOOLCHAIN_DIGEST","scenario_digest":"$SCENARIO_DIGEST","test_inventory_digest":"$TEST_INVENTORY_DIGEST","command_digest":"$COMMAND_DIGEST","terminal_result":"PASS","result_digest":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","release":{"provider":"github","repository":"kimjooyoon/gooo-causal-verification-runner","release_id":1,"tag":"v0.1.0","self_asserted_immutable":true,"platform_immutable":true,"asset_digest":"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","asset_name":"gooo-causal-verification-runner-v0.1.0.tar.gz"}}
+  ],
+  "full_oracle":{"oracle_id":"oracle-safe-reuse","independent":true,"digest":"$FULL_ORACLE_DIGEST","results":[
+    {"test_id":"test_price","status":"PASS","result_digest":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    {"test_id":"test_format","status":"PASS","result_digest":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}
+  ]},
+  "performance_pair":{"before":{"source_digest":"$SOURCE_DIGEST","toolchain_digest":"$TOOLCHAIN_DIGEST","scenario_digest":"$SCENARIO_DIGEST","wall_ms":100,"peak_rss_kib":200},"after":{"source_digest":"$SOURCE_DIGEST","toolchain_digest":"$TOOLCHAIN_DIGEST","scenario_digest":"$SCENARIO_DIGEST","wall_ms":70,"peak_rss_kib":180}},
+  "counterexamples":[],"cache_hit":true,
+  "expected":{"decision":"CLOSED","selection_mode":"CAUSAL_SELECT","total_tests":2,"selected":1,"executed":1,"reused":1,"full_oracle_executed":2,"failures":0,"unknowns":0,"avoided_executions":1,"invalidated_edge_count":1}
+}
+

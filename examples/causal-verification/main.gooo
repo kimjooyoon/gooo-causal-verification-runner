@@ -1,0 +1,23 @@
+package causalverificationrunner
+namespace causalverificationrunner
+
+entity ChangeClaim id "gooo://causal-verification-runner/entity/change-claim"
+entity SemanticPredicate id "gooo://causal-verification-runner/entity/semantic-predicate"
+entity RequiredTest id "gooo://causal-verification-runner/entity/required-test"
+entity ReusableProof id "gooo://causal-verification-runner/entity/reusable-proof"
+entity ExecutedTest id "gooo://causal-verification-runner/entity/executed-test"
+entity FullOracleComparison id "gooo://causal-verification-runner/entity/full-oracle-comparison"
+entity VerificationReceipt id "gooo://causal-verification-runner/entity/verification-receipt"
+
+activity ObserveChangeClaim(ChangeClaim) -> SemanticPredicate computes "causal-verification.change-claim/v1;stage=CHANGE_CLAIM;step=bind-change-claim;proof=FOUNDATION;indicator=DRIVER"
+activity BindSemanticGraph(SemanticPredicate) -> SemanticPredicate computes "causal-verification.bind-graph/v1;stage=SEMANTIC_GRAPH;step=bind-released-graph;proof=FOUNDATION;indicator=DRIVER"
+activity DeriveAffectedSemanticPredicates(SemanticPredicate) -> SemanticPredicate computes "causal-verification.affected-predicates/v1;stage=AFFECTED_SEMANTIC_PREDICATES;step=compute-transitive-closure;proof=FOUNDATION;indicator=OUTCOME"
+activity DetectUnknownImpactEdges(SemanticPredicate) -> SemanticPredicate computes "causal-verification.unknown-edge/v1;stage=AFFECTED_SEMANTIC_PREDICATES;step=detect-unknown-impact-edge;proof=FOUNDATION;indicator=GUARDRAIL"
+activity DeriveRequiredTests(SemanticPredicate) -> RequiredTest computes "causal-verification.required-tests/v1;stage=REQUIRED_TESTS;step=map-predicates-to-tests;proof=COHERENCE;indicator=OUTCOME"
+activity VerifyReusableProofs(RequiredTest) -> ReusableProof computes "causal-verification.reusable-proofs/v1;stage=REUSABLE_PROOFS;step=verify-exact-proof-identity;proof=COHERENCE;indicator=DRIVER"
+activity RejectStaleProofs(ReusableProof) -> ReusableProof computes "causal-verification.stale-proof-rejection/v1;stage=REUSABLE_PROOFS;step=reject-stale-or-nonimmutable-proof;proof=COHERENCE;indicator=GUARDRAIL"
+activity PlanExecution(ReusableProof) -> RequiredTest computes "causal-verification.execution-plan/v1;stage=EXECUTED_TESTS;step=plan-execute-or-reuse;proof=COHERENCE;indicator=OUTCOME"
+activity ObserveExecutedTests(RequiredTest) -> ExecutedTest computes "causal-verification.executed-tests/v1;stage=EXECUTED_TESTS;step=bind-current-test-observations;proof=REGRESSION;indicator=OUTCOME"
+activity ExecuteFullOracle(ExecutedTest) -> FullOracleComparison computes "causal-verification.full-oracle/v1;stage=INDEPENDENT_FULL_ORACLE_COMPARISON;step=bind-independent-full-oracle;proof=REGRESSION;indicator=DRIVER"
+activity CompareSelectiveWithFullOracle(ExecutedTest, FullOracleComparison) -> FullOracleComparison computes "causal-verification.oracle-comparison/v1;stage=INDEPENDENT_FULL_ORACLE_COMPARISON;step=compare-selective-and-full-results;proof=REGRESSION;indicator=GUARDRAIL"
+activity EmitCausalVerificationReceipt(FullOracleComparison) -> VerificationReceipt computes "causal-verification.receipt/v1;stage=RECEIPT;step=emit-plan-and-receipt;proof=REGRESSION;indicator=GUARDRAIL"
