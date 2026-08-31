@@ -129,7 +129,7 @@ func VerifyProcessAuthority(contract ProcessAuthorityContract, evidence GitHubPr
 			if err != nil {
 				return ProcessGuardResult{}, fmt.Errorf("process case %q has non-numeric current guard evidence", rule.ID)
 			}
-			pr, ok := prs[prNumber]
+			_, ok := prs[prNumber]
 			if !ok {
 				detail := processUnknown("PR_MERGE_ONLY", "bind-source-pull-request", "CURRENT_GUARD_PR_NOT_OBSERVED", "DIRECT_MISSING", "OBTAIN_PULL_REQUEST_API_EVIDENCE", []string{fmt.Sprintf("pull_request:%d", prNumber)})
 				result.Unknowns = append(result.Unknowns, detail)
