@@ -86,7 +86,7 @@ jobs:
             test -n "$expected" && test "$expected" = "$actual"
           done
           jq -e --arg tag "$tag" --arg commit "$(git rev-parse "$tag^{commit}")" --arg object "$(git rev-parse "$tag")" \
-            '.tag == $tag and .commit_sha == $commit and .tag_object_sha == $object and .immutable == true' \
+            '.tag == $tag and .commit_sha == $commit and .tag_object_sha == $object and .self_asserted_immutable == true' \
             "$audit_dir/release-manifest.json" >/dev/null
           cat "$release" >> "$GITHUB_STEP_SUMMARY"
 
