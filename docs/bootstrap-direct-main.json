@@ -6,7 +6,9 @@
   "bootstrap_paths":[".gitignore","LICENSE","README.md"],
   "main_was_bootstrapped_with_exactly_three_files":true,
   "feature_branch":"implementation",
-  "feature_pr":"PENDING_HUMAN_CONTROLLED_SINGLE_PR",
-  "remote_mutation_performed":false
+  "feature_pr":"https://github.com/kimjooyoon/gooo-causal-verification-runner/pull/1",
+  "feature_pr_state":"MERGED",
+  "merge_commit":"8064430a4cca385ccb79b94a5a4255ac90949694",
+  "external_target_repositories_read_only":true,
+  "new_repository_mutations_authorized":true
 }
-
