@@ -44,18 +44,67 @@ type SourceActivity struct {
 }
 
 type SourceSpec struct {
-	Package    string           `json:"package"`
-	Namespace  string           `json:"namespace"`
-	Activities []SourceActivity `json:"activities"`
+	Package          string                   `json:"package"`
+	Namespace        string                   `json:"namespace"`
+	Activities       []SourceActivity         `json:"activities"`
+	ProcessAuthority ProcessAuthorityContract `json:"process_authority"`
+}
+
+type ProcessAuthorityContract struct {
+	Name         string               `json:"name"`
+	Fields       map[string][]string  `json:"fields"`
+	Cells        []ProcessGuardCell   `json:"cells"`
+	Cases        []ProcessGuardCase   `json:"cases"`
+	PullRequests []ProcessPRRule      `json:"pull_requests"`
+	Releases     []ProcessReleaseRule `json:"releases"`
+	Assets       []ProcessAssetRule   `json:"assets"`
+}
+
+type ProcessGuardCell struct {
+	ID       string   `json:"id"`
+	Rule     string   `json:"rule"`
+	Expected Decision `json:"expected"`
+}
+
+type ProcessGuardCase struct {
+	ID       string   `json:"id"`
+	Evidence string   `json:"evidence"`
+	Expected Decision `json:"expected"`
+}
+
+type ProcessPRRule struct {
+	Number       int      `json:"number"`
+	URL          string   `json:"url"`
+	BaseRef      string   `json:"base_ref"`
+	HeadRef      string   `json:"head_ref"`
+	MergeCommit  string   `json:"merge_commit"`
+	MergeParents []string `json:"merge_parents"`
+}
+
+type ProcessReleaseRule struct {
+	Tag          string `json:"tag"`
+	ReleaseID    int64  `json:"release_id"`
+	TagObject    string `json:"tag_object"`
+	TargetCommit string `json:"target_commit"`
+	Immutable    bool   `json:"immutable"`
+}
+
+type ProcessAssetRule struct {
+	Tag       string `json:"tag"`
+	AssetID   int64  `json:"asset_id"`
+	Name      string `json:"name"`
+	SizeBytes int64  `json:"size_bytes"`
+	Digest    string `json:"digest"`
 }
 
 type SemanticIR struct {
-	Schema       string           `json:"schema"`
-	Protocol     string           `json:"protocol"`
-	SourcePath   string           `json:"source_path"`
-	SourceDigest string           `json:"source_digest"`
-	Activities   []SourceActivity `json:"activities"`
-	Digest       string           `json:"digest"`
+	Schema           string                   `json:"schema"`
+	Protocol         string                   `json:"protocol"`
+	SourcePath       string                   `json:"source_path"`
+	SourceDigest     string                   `json:"source_digest"`
+	Activities       []SourceActivity         `json:"activities"`
+	ProcessAuthority ProcessAuthorityContract `json:"process_authority"`
+	Digest           string                   `json:"digest"`
 }
 
 type ChangeClaim struct {
