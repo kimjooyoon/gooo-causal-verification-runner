@@ -1,8 +1,8 @@
-name: Prepare immutable v0.1.0 release assets
+name: Prepare immutable release assets
 
 on:
   push:
-    tags: ["v*"]
+    tags: ["v0.1.0", "v0.1.1"]
   workflow_dispatch:
     inputs:
       tag:
@@ -12,10 +12,13 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   prepare-assets:
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - name: Check out tagged source
         uses: actions/checkout@v5
@@ -23,28 +26,41 @@ jobs:
           fetch-depth: 0
           ref: ${{ inputs.tag || github.ref }}
 
+      - name: Install Go 1.27
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.27.0
+          cache: false
+
       - name: Build caller-owned release assets and exact digests
         shell: bash
         run: |
           set -Eeuo pipefail
-          tag="${{ inputs.tag || github.ref_name }}"
-          test "$tag" = "v0.1.0"
-          tag_object_sha=$(git rev-parse "$tag")
+          case "$RELEASE_TAG" in
+            v0.1.0|v0.1.1) ;;
+            *) echo "unsupported release tag $RELEASE_TAG" >&2; exit 64 ;;
+          esac
+          tag_object_sha=$(git rev-parse "$RELEASE_TAG")
           test "$(git cat-file -t "$tag_object_sha")" = "tag"
-          commit_sha=$(git rev-parse "$tag^{commit}")
-          archive="gooo-causal-verification-runner-${tag}.tar.gz"
-          git archive --format=tar.gz --prefix="gooo-causal-verification-runner-${tag}/" "$commit_sha" > "$RUNNER_TEMP/$archive"
+          commit_sha=$(git rev-parse "$RELEASE_TAG^{commit}")
+          archive="gooo-causal-verification-runner-${RELEASE_TAG}.tar.gz"
+          git archive --format=tar.gz --prefix="gooo-causal-verification-runner-${RELEASE_TAG}/" "$commit_sha" > "$RUNNER_TEMP/$archive"
           asset_digest="sha256:$(sha256sum "$RUNNER_TEMP/$archive" | awk '{print $1}')"
           asset_size=$(wc -c < "$RUNNER_TEMP/$archive" | tr -d ' ')
           printf '%s  %s\n' "$asset_digest" "$archive" > "$RUNNER_TEMP/SHA256SUMS"
+          release_class="historical_semantic_release_process_refuted"
+          if [ "$RELEASE_TAG" = "v0.1.1" ]; then
+            release_class="first_post_guard_durable_release"
+          fi
           jq -S -n \
-            --arg tag "$tag" \
+            --arg tag "$RELEASE_TAG" \
             --arg tag_object_sha "$tag_object_sha" \
             --arg commit_sha "$commit_sha" \
             --arg archive "$archive" \
             --arg asset_digest "$asset_digest" \
+            --arg release_class "$release_class" \
             --argjson asset_size "$asset_size" \
-            '{schema:"gooo/causal-verification-runner/release-manifest/v1",tag:$tag,tag_object_sha:$tag_object_sha,commit_sha:$commit_sha,archive:$archive,asset_size_bytes:$asset_size,asset_digest:$asset_digest,self_asserted_immutable:true,external_platform_authority:"github_release_api.immutable"}' \
+            '{schema:"gooo/causal-verification-runner/release-manifest/v1",tag:$tag,tag_object_sha:$tag_object_sha,commit_sha:$commit_sha,archive:$archive,asset_size_bytes:$asset_size,asset_digest:$asset_digest,release_class:$release_class,self_asserted_immutable:true,external_platform_authority:"github_release_api.immutable"}' \
             > "$RUNNER_TEMP/release-manifest.json"
           manifest_digest="sha256:$(sha256sum "$RUNNER_TEMP/release-manifest.json" | awk '{print $1}')"
           printf '%s  %s\n' "$manifest_digest" release-manifest.json >> "$RUNNER_TEMP/SHA256SUMS"
@@ -56,13 +72,12 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          tag="${{ inputs.tag || github.ref_name }}"
-          archive="gooo-causal-verification-runner-${tag}.tar.gz"
-          if gh release view "$tag" >/dev/null 2>&1; then
+          archive="gooo-causal-verification-runner-${RELEASE_TAG}.tar.gz"
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             echo "release already exists; auditing it without rewriting assets"
           else
-            gh release create "$tag" --verify-tag --title "gooo-causal-verification-runner $tag" \
-              --notes "Immutable source asset bound to annotated tag $(git rev-parse "$tag^{commit}")." \
+            gh release create "$RELEASE_TAG" --verify-tag --title "gooo-causal-verification-runner $RELEASE_TAG" \
+              --notes "Immutable source asset bound to annotated tag $(git rev-parse "$RELEASE_TAG^{commit}")." \
               "$RUNNER_TEMP/$archive" "$RUNNER_TEMP/SHA256SUMS" "$RUNNER_TEMP/release-manifest.json"
           fi
 
@@ -72,30 +87,63 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          tag="${{ inputs.tag || github.ref_name }}"
           release="$RUNNER_TEMP/release.json"
-          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/$tag" > "$release"
-          jq -e --arg tag "$tag" '.tag_name == $tag and .draft == false and .prerelease == false and .immutable == true' "$release" >/dev/null
-          archive="gooo-causal-verification-runner-${tag}.tar.gz"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/$RELEASE_TAG" > "$release"
+          jq -e --arg tag "$RELEASE_TAG" '.tag_name == $tag and .draft == false and .prerelease == false and .immutable == true' "$release" >/dev/null
+          archive="gooo-causal-verification-runner-${RELEASE_TAG}.tar.gz"
           audit_dir="$RUNNER_TEMP/release-audit"
           mkdir -p "$audit_dir"
           for asset in "$archive" SHA256SUMS release-manifest.json; do
-            curl --fail --location --retry 3 --silent --show-error "https://github.com/${GITHUB_REPOSITORY}/releases/download/$tag/$asset" --output "$audit_dir/$asset"
+            curl --fail --location --retry 3 --silent --show-error "https://github.com/${GITHUB_REPOSITORY}/releases/download/$RELEASE_TAG/$asset" --output "$audit_dir/$asset"
             expected=$(jq -r --arg name "$asset" '.assets[] | select(.name == $name) | .digest' "$release")
             actual="sha256:$(sha256sum "$audit_dir/$asset" | awk '{print $1}')"
             test -n "$expected" && test "$expected" = "$actual"
           done
-          jq -e --arg tag "$tag" --arg commit "$(git rev-parse "$tag^{commit}")" --arg object "$(git rev-parse "$tag")" \
+          jq -e --arg tag "$RELEASE_TAG" --arg commit "$(git rev-parse "$RELEASE_TAG^{commit}")" --arg object "$(git rev-parse "$RELEASE_TAG")" \
             '.tag == $tag and .commit_sha == $commit and .tag_object_sha == $object and .self_asserted_immutable == true' \
             "$audit_dir/release-manifest.json" >/dev/null
           cat "$release" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Collect API evidence and verify the first post-guard durable release
+        if: ${{ (inputs.tag || github.ref_name) == 'v0.1.1' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          process_root="$RUNNER_TEMP/process-authority"
+          mkdir -p "$process_root"
+          scripts/collect-process-evidence.sh "$GITHUB_REPOSITORY" release "$process_root/github-process-evidence.json"
+          go build -trimpath -o "$process_root/verifier" ./cmd/gooo-causal-verification-runner
+          "$process_root/verifier" process-verify \
+            --source "$GITHUB_WORKSPACE/examples/causal-verification/main.gooo" \
+            --evidence "$process_root/github-process-evidence.json" \
+            --tree-root "$GITHUB_WORKSPACE" \
+            --output-dir "$process_root/guard"
+          jq -e '
+            .decision == "REFUTED" and .current_guard_decision == "CLOSED" and
+            .counts.bootstrap_direct_main == 1 and
+            .counts.historical_post_bootstrap_direct_main == 2 and
+            .counts.post_guard_direct_main == 0 and
+            ([.cells[] | select(.id == "ASSET_IMMUTABILITY" and .state == "CLOSED")] | length) == 1 and
+            ([.cases[] | select(.expected == "REFUTED" and .state == "REFUTED" and .counterexample == true)] | length) == 2
+          ' "$process_root/guard/process-guard.json" >/dev/null
+          cat "$process_root/guard/process-guard.json" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload audited release evidence
         uses: actions/upload-artifact@v4
         with:
-          name: gooo-causal-verification-runner-v0.1.0-release-assets
+          name: gooo-causal-verification-runner-${{ env.RELEASE_TAG }}-release-assets
           path: |
-            ${{ runner.temp }}/gooo-causal-verification-runner-v0.1.0.tar.gz
+            ${{ runner.temp }}/gooo-causal-verification-runner-${{ env.RELEASE_TAG }}.tar.gz
             ${{ runner.temp }}/SHA256SUMS
             ${{ runner.temp }}/release-manifest.json
+          if-no-files-found: error
+
+      - name: Upload process authority release evidence
+        if: ${{ (inputs.tag || github.ref_name) == 'v0.1.1' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gooo-causal-verification-runner-v0.1.1-process-authority
+          path: ${{ runner.temp }}/process-authority
           if-no-files-found: error

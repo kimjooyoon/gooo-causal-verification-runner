@@ -49,7 +49,7 @@ func RenderHumanReport(plan Plan) string {
 	fmt.Fprintf(&builder, "selection_mode: `%s`\n", plan.SelectionMode)
 	fmt.Fprintf(&builder, "reason: `%s`\n\n", plan.DecisionReason)
 	fmt.Fprintf(&builder, "tests: total=%d selected=%d executed=%d reused=%d full_oracle_executed=%d failures=%d unknowns=%d avoided_executions=%d\n", plan.Metrics.TotalTests, plan.Metrics.Selected, plan.Metrics.Executed, plan.Metrics.Reused, plan.Metrics.FullOracleExecuted, plan.Metrics.Failures, plan.Metrics.Unknowns, plan.Metrics.AvoidedExecutions)
-	fmt.Fprintf(&builder, "timing: before_wall_ms=%d after_wall_ms=%d before_peak_rss_kib=%d after_peak_rss_kib=%d build_ms=%d test_ms=%d conformance_ms=%d\n", plan.Metrics.BeforeWallMS, plan.Metrics.AfterWallMS, plan.Metrics.BeforePeakRSSKiB, plan.Metrics.AfterPeakRSSKiB, plan.Metrics.BuildMS, plan.Metrics.TestMS, plan.Metrics.ConformanceMS)
+	fmt.Fprintf(&builder, "timing: before_wall_ms=%d after_wall_ms=%d before_peak_rss_kib=%d after_peak_rss_kib=%d compile_ms=%d build_ms=%d test_ms=%d conformance_ms=%d\n", plan.Metrics.BeforeWallMS, plan.Metrics.AfterWallMS, plan.Metrics.BeforePeakRSSKiB, plan.Metrics.AfterPeakRSSKiB, plan.Metrics.CompileMS, plan.Metrics.BuildMS, plan.Metrics.TestMS, plan.Metrics.ConformanceMS)
 	fmt.Fprintf(&builder, "performance: saved_time_ms=%v improvement=%v state=%s\n\n", plan.Performance.SavedTimeMS, plan.Performance.Improvement, plan.Performance.State)
 	builder.WriteString("## Causal chain\n\n")
 	fmt.Fprintf(&builder, "change claim: %s\n", plan.ChangeClaim.ClaimID)

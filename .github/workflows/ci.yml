@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   conformance:
@@ -33,6 +34,15 @@ jobs:
           test "$(go env GOVERSION)" = "go1.27.0"
           test "$(go env GOOS)" = "linux"
           test "$(go env GOARCH)" = "amd64"
+
+      - name: Measure the CI compile
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root="$RUNNER_TEMP/$CI_OUTPUT_NAME"
+          mkdir -p "$root"
+          scripts/measure-command.sh "$root/compile-observation.json" "$root/compile-result" "$root/compile.log" "compile-${GITHUB_RUN_ID}" \
+            go build ./...
 
       - name: Verify formatting without writing the checkout
         shell: bash
@@ -65,10 +75,13 @@ jobs:
         run: |
           set -Eeuo pipefail
           root="$RUNNER_TEMP/$CI_OUTPUT_NAME"
+          compile_ms=$(jq -r '.wall_ms' "$root/compile-observation.json")
           build_ms=$(jq -r '.wall_ms' "$root/build-observation.json")
           test_ms=$(jq -r '.wall_ms' "$root/test-observation.json")
-          scripts/ci-conformance.sh "$GITHUB_WORKSPACE" "$root/gooo-causal-verification-runner" "$root/cases" "$build_ms" "$test_ms"
-          cat "$root/cases/ci-summary.json" >> "$GITHUB_STEP_SUMMARY"
+          scripts/measure-command.sh "$root/conformance-observation.json" "$root/conformance-result" "$root/conformance.log" "conformance-${GITHUB_RUN_ID}" \
+            scripts/ci-conformance.sh "$GITHUB_WORKSPACE" "$root/gooo-causal-verification-runner" "$root/cases" "$compile_ms" "$build_ms" "$test_ms"
+          scripts/finalize-ci-artifact.sh "$root"
+          cat "$root/ci-artifact-summary.json" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload machine receipts and reports
         if: always()
