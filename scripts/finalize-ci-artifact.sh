@@ -8,7 +8,7 @@ fi
 
 root=$1
 summary="$root/cases/ci-summary.json"
-process="$root/process/process-guard.json"
+process="$root/cases/process/process-guard.json"
 compile_ms=$(jq -r '.wall_ms' "$root/compile-observation.json")
 build_ms=$(jq -r '.wall_ms' "$root/build-observation.json")
 test_ms=$(jq -r '.wall_ms' "$root/test-observation.json")
