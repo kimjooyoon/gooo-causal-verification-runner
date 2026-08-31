@@ -81,7 +81,7 @@ func conformance(args []string) error {
 		return err
 	}
 
-	contract, contractDigest, err := loadContract(*contractPath)
+	_, _, err = loadContract(*contractPath)
 	if err != nil {
 		return err
 	}
