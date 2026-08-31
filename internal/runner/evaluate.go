@@ -206,7 +206,7 @@ func EvaluateCase(value Case, source SourceSpec, sourceDigest, treeDigest, contr
 		ScenarioDigest: scenarioDigest, Activities: activities, AffectedSemanticPredicates: affectedPredicates(affectedNodes), RequiredTests: requiredTests,
 		Tests: testDecisions, InvalidationFrontier: frontier,
 		Metrics: metrics, Unknowns: unknowns, Refutations: refutations, FullOracleComparison: oracleComparison, Performance: performance,
-		Authority: plan.Authority, RootReadmeExcluded: inventory.RootReadmeExcluded,
+		Authority: plan.Authority, RootReadmeExcluded: inventory.RootReadmeExcluded, Inventory: inventory,
 	}
 	return plan, receipt, nil
 }
@@ -469,7 +469,7 @@ func assessPerformance(pair *PerformancePair, current Bindings) PerformanceAsses
 }
 
 func buildMetrics(decisions []TestDecision, oracle FullOracle, measurements RuntimeMeasurements, pair *PerformancePair, current Bindings, unknowns []UnknownDetail) Metrics {
-	metrics := Metrics{TotalTests: len(decisions), FullOracleExecuted: len(oracle.Results), BuildMS: measurements.BuildMS, TestMS: measurements.TestMS, ConformanceMS: measurements.ConformanceMS, Unknowns: len(unknowns)}
+	metrics := Metrics{TotalTests: len(decisions), FullOracleExecuted: len(oracle.Results), CompileMS: measurements.CompileMS, BuildMS: measurements.BuildMS, TestMS: measurements.TestMS, ConformanceMS: measurements.ConformanceMS, Unknowns: len(unknowns)}
 	for _, decision := range decisions {
 		switch decision.Action {
 		case "EXECUTE":

@@ -44,18 +44,159 @@ type SourceActivity struct {
 }
 
 type SourceSpec struct {
-	Package    string           `json:"package"`
-	Namespace  string           `json:"namespace"`
-	Activities []SourceActivity `json:"activities"`
+	Package          string                   `json:"package"`
+	Namespace        string                   `json:"namespace"`
+	Activities       []SourceActivity         `json:"activities"`
+	ProcessAuthority ProcessAuthorityContract `json:"process_authority"`
+}
+
+type ProcessAuthorityContract struct {
+	Name         string               `json:"name"`
+	Fields       map[string][]string  `json:"fields"`
+	Cells        []ProcessGuardCell   `json:"cells"`
+	Cases        []ProcessGuardCase   `json:"cases"`
+	PullRequests []ProcessPRRule      `json:"pull_requests"`
+	Releases     []ProcessReleaseRule `json:"releases"`
+	Assets       []ProcessAssetRule   `json:"assets"`
+}
+
+type ProcessGuardCell struct {
+	ID       string   `json:"id"`
+	Rule     string   `json:"rule"`
+	Expected Decision `json:"expected"`
+}
+
+type ProcessGuardCase struct {
+	ID       string   `json:"id"`
+	Evidence string   `json:"evidence"`
+	Expected Decision `json:"expected"`
+}
+
+type ProcessPRRule struct {
+	Number       int      `json:"number"`
+	URL          string   `json:"url"`
+	BaseRef      string   `json:"base_ref"`
+	HeadRef      string   `json:"head_ref"`
+	MergeCommit  string   `json:"merge_commit"`
+	MergeParents []string `json:"merge_parents"`
+}
+
+type ProcessReleaseRule struct {
+	Tag          string `json:"tag"`
+	ReleaseID    int64  `json:"release_id"`
+	TagObject    string `json:"tag_object"`
+	TargetCommit string `json:"target_commit"`
+	Immutable    bool   `json:"immutable"`
+}
+
+type ProcessAssetRule struct {
+	Tag       string `json:"tag"`
+	AssetID   int64  `json:"asset_id"`
+	Name      string `json:"name"`
+	SizeBytes int64  `json:"size_bytes"`
+	Digest    string `json:"digest"`
+}
+
+type GitHubCommitEvidence struct {
+	SHA                string   `json:"sha"`
+	Parents            []string `json:"parents"`
+	PullRequestNumbers []int    `json:"pull_request_numbers"`
+}
+
+type GitHubPullRequestEvidence struct {
+	Number         int    `json:"number"`
+	URL            string `json:"url"`
+	State          string `json:"state"`
+	Merged         bool   `json:"merged"`
+	BaseRef        string `json:"base_ref"`
+	HeadRef        string `json:"head_ref"`
+	HeadSHA        string `json:"head_sha"`
+	MergeCommitSHA string `json:"merge_commit_sha"`
+}
+
+type GitHubTagEvidence struct {
+	Name       string `json:"name"`
+	RefSHA     string `json:"ref_sha"`
+	ObjectSHA  string `json:"object_sha"`
+	ObjectType string `json:"object_type"`
+	TargetSHA  string `json:"target_sha"`
+	TargetType string `json:"target_type"`
+}
+
+type GitHubAssetEvidence struct {
+	ID     int64  `json:"id"`
+	Name   string `json:"name"`
+	Size   int64  `json:"size"`
+	Digest string `json:"digest"`
+}
+
+type GitHubReleaseEvidence struct {
+	ID         int64                 `json:"id"`
+	TagName    string                `json:"tag_name"`
+	Immutable  bool                  `json:"immutable"`
+	Draft      bool                  `json:"draft"`
+	Prerelease bool                  `json:"prerelease"`
+	Assets     []GitHubAssetEvidence `json:"assets"`
+}
+
+type GitHubProcessEvidence struct {
+	Schema       string                      `json:"schema"`
+	Repository   string                      `json:"repository"`
+	Phase        string                      `json:"phase"`
+	MainHead     string                      `json:"main_head"`
+	MainCommits  []GitHubCommitEvidence      `json:"main_commits"`
+	PullRequests []GitHubPullRequestEvidence `json:"pull_requests"`
+	Tags         []GitHubTagEvidence         `json:"tags"`
+	Releases     []GitHubReleaseEvidence     `json:"releases"`
+}
+
+type ProcessCellResult struct {
+	ID       string   `json:"id"`
+	Rule     string   `json:"rule"`
+	Expected Decision `json:"expected"`
+	State    Decision `json:"state"`
+	Reason   string   `json:"reason"`
+}
+
+type ProcessCaseResult struct {
+	ID             string   `json:"id"`
+	Evidence       string   `json:"evidence"`
+	Expected       Decision `json:"expected"`
+	State          Decision `json:"state"`
+	Reason         string   `json:"reason"`
+	Counterexample bool     `json:"counterexample"`
+}
+
+type ProcessCounts struct {
+	BootstrapDirectMain           int `json:"bootstrap_direct_main"`
+	HistoricalPostBootstrapDirect int `json:"historical_post_bootstrap_direct_main"`
+	PostGuardDirectMain           int `json:"post_guard_direct_main"`
+}
+
+type ProcessGuardResult struct {
+	Schema                    string              `json:"schema"`
+	Repository                string              `json:"repository"`
+	Phase                     string              `json:"phase"`
+	Decision                  Decision            `json:"decision"`
+	CurrentGuardDecision      Decision            `json:"current_guard_decision"`
+	Precedence                []Decision          `json:"precedence"`
+	Cells                     []ProcessCellResult `json:"cells"`
+	Cases                     []ProcessCaseResult `json:"cases"`
+	Counts                    ProcessCounts       `json:"counts"`
+	Unknowns                  []UnknownDetail     `json:"unknowns"`
+	Refutations               []string            `json:"refutations"`
+	HistoricalCounterexamples []string            `json:"historical_counterexamples"`
+	UtilityGlobalCore         map[string]string   `json:"utility_global_core"`
 }
 
 type SemanticIR struct {
-	Schema       string           `json:"schema"`
-	Protocol     string           `json:"protocol"`
-	SourcePath   string           `json:"source_path"`
-	SourceDigest string           `json:"source_digest"`
-	Activities   []SourceActivity `json:"activities"`
-	Digest       string           `json:"digest"`
+	Schema           string                   `json:"schema"`
+	Protocol         string                   `json:"protocol"`
+	SourcePath       string                   `json:"source_path"`
+	SourceDigest     string                   `json:"source_digest"`
+	Activities       []SourceActivity         `json:"activities"`
+	ProcessAuthority ProcessAuthorityContract `json:"process_authority"`
+	Digest           string                   `json:"digest"`
 }
 
 type ChangeClaim struct {
@@ -270,6 +411,7 @@ type Metrics struct {
 	AfterWallMS        int64 `json:"after_wall_ms"`
 	BeforePeakRSSKiB   int64 `json:"before_peak_rss_kib"`
 	AfterPeakRSSKiB    int64 `json:"after_peak_rss_kib"`
+	CompileMS          int64 `json:"compile_ms"`
 	BuildMS            int64 `json:"build_ms"`
 	TestMS             int64 `json:"test_ms"`
 	ConformanceMS      int64 `json:"conformance_ms"`
@@ -353,6 +495,7 @@ type Receipt struct {
 	Performance                PerformanceAssessment `json:"performance"`
 	Authority                  Authority             `json:"authority"`
 	RootReadmeExcluded         bool                  `json:"root_readme_excluded"`
+	Inventory                  Inventory             `json:"inventory"`
 }
 
 type ArtifactBinding struct {
@@ -387,6 +530,7 @@ type ArtifactFile struct {
 }
 
 type RuntimeMeasurements struct {
+	CompileMS     int64 `json:"compile_ms"`
 	BuildMS       int64 `json:"build_ms"`
 	TestMS        int64 `json:"test_ms"`
 	ConformanceMS int64 `json:"conformance_ms"`

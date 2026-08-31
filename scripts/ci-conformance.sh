@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-if [ "$#" -ne 5 ]; then
-  echo "usage: ci-conformance.sh REPOSITORY BINARY OUTPUT BUILD_MS TEST_MS" >&2
+if [ "$#" -ne 6 ]; then
+  echo "usage: ci-conformance.sh REPOSITORY BINARY OUTPUT COMPILE_MS BUILD_MS TEST_MS" >&2
   exit 64
 fi
 
 repository=$1
 binary=$2
 output=$3
-build_ms=$4
-test_ms=$5
+compile_ms=$4
+build_ms=$5
+test_ms=$6
 
 before=$(git -C "$repository" status --porcelain=v1 -z --untracked-files=all | sha256sum | awk '{print $1}')
 mkdir -p "$output"
@@ -22,6 +23,7 @@ mkdir -p "$output"
   --tree-root "$repository" \
   --output-dir "$output" \
   --build-ms "$build_ms" \
+  --compile-ms "$compile_ms" \
   --test-ms "$test_ms"
 
 jq -e '
@@ -93,7 +95,27 @@ jq -e '.decision == "REFUTED" and any(.refutations[]; startswith("STALE_PROOF_RE
 jq -e '.decision == "REFUTED" and .full_oracle_comparison.reason == "SELECTIVE_FULL_ORACLE_MISMATCH" and any(.refutations[]; startswith("HIDDEN_COUNTEREXAMPLE_REFUTED")) and .metrics.failures == 1' "$output/hidden-counterexample/verification-receipt.json" >/dev/null
 jq -e '.decision == "REFUTED" and any(.refutations[]; . == "CACHE_HIT_WITHOUT_EXACT_PROOF") and .metrics.reused == 0' "$output/cache-hit-only/verification-receipt.json" >/dev/null
 
+phase="main"
+if [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ]; then
+  phase="pull_request"
+fi
+scripts/collect-process-evidence.sh "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required in GitHub Actions}" "$phase" "$output/process-evidence.json"
+"$binary" process-verify \
+  --source "$repository/examples/causal-verification/main.gooo" \
+  --evidence "$output/process-evidence.json" \
+  --tree-root "$repository" \
+  --output-dir "$output/process"
+jq -e '
+  .schema == "gooo/causal-verification-runner/process-authority/v1" and
+  .decision == "REFUTED" and .current_guard_decision == "CLOSED" and
+  .counts.bootstrap_direct_main == 1 and
+  .counts.historical_post_bootstrap_direct_main == 2 and
+  .counts.post_guard_direct_main == 0 and
+  ([.cells[]] | length) == 8 and ([.cases[]] | length) == 3 and
+  ([.cases[] | select(.expected == "REFUTED" and .state == "REFUTED" and .counterexample == true)] | length) == 2 and
+  .utility_global_core.state == "UNKNOWN" and .utility_global_core.status == "NOT_MADE"
+' "$output/process/process-guard.json" >/dev/null
+
 after=$(git -C "$repository" status --porcelain=v1 -z --untracked-files=all | sha256sum | awk '{print $1}')
 test "$before" = "$after"
 test "$(find "$output" -type f | wc -l | tr -d ' ')" -ge 37
-

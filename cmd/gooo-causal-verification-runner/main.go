@@ -14,7 +14,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fatalf("usage: gooo-causal-verification-runner run|conformance [flags]")
+		fatalf("usage: gooo-causal-verification-runner run|conformance|process-verify [flags]")
 	}
 	var err error
 	switch os.Args[1] {
@@ -22,12 +22,69 @@ func main() {
 		err = run(os.Args[2:])
 	case "conformance":
 		err = conformance(os.Args[2:])
+	case "process-verify":
+		err = processVerify(os.Args[2:])
 	default:
 		err = fmt.Errorf("unknown command %q", os.Args[1])
 	}
 	if err != nil {
 		fatalf("%v", err)
 	}
+}
+
+func processVerify(args []string) error {
+	flags := flag.NewFlagSet("process-verify", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	sourcePath := flags.String("source", "examples/causal-verification/main.gooo", "path to the .gooo process-authority contract")
+	evidencePath := flags.String("evidence", "", "GitHub API evidence snapshot")
+	outPath := flags.String("output-dir", "", "empty caller-owned output directory")
+	treeRoot := flags.String("tree-root", ".", "input tree root")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if *evidencePath == "" || *outPath == "" {
+		return fmt.Errorf("evidence and output-dir are required")
+	}
+	absoluteTree, err := filepath.Abs(*treeRoot)
+	if err != nil {
+		return err
+	}
+	absoluteOut, err := filepath.Abs(*outPath)
+	if err != nil {
+		return err
+	}
+	if err := requireOutside(absoluteTree, absoluteOut); err != nil {
+		return err
+	}
+	if err := prepareEmptyDirectory(absoluteOut); err != nil {
+		return err
+	}
+	source, _, err := runner.ParseSource(*sourcePath)
+	if err != nil {
+		return err
+	}
+	var evidence runner.GitHubProcessEvidence
+	if err := runner.LoadJSON(*evidencePath, &evidence); err != nil {
+		return err
+	}
+	result, err := runner.VerifyProcessAuthority(source.ProcessAuthority, evidence)
+	if err != nil {
+		return err
+	}
+	if err := runner.WriteJSON(filepath.Join(absoluteOut, "process-guard.json"), result); err != nil {
+		return err
+	}
+	if result.CurrentGuardDecision != runner.Closed {
+		return fmt.Errorf("current process guard decision is %s", result.CurrentGuardDecision)
+	}
+	if evidence.Phase == "release" {
+		for _, cell := range result.Cells {
+			if cell.ID == "ASSET_IMMUTABILITY" && cell.State != runner.Closed {
+				return fmt.Errorf("durable release asset policy is %s", cell.State)
+			}
+		}
+	}
+	return nil
 }
 
 func run(args []string) error {
@@ -38,6 +95,7 @@ func run(args []string) error {
 	casePath := flags.String("case", "", "path to one caller-provided fixture case")
 	outPath := flags.String("output-dir", "", "empty caller-owned output directory")
 	treeRoot := flags.String("tree-root", ".", "input tree root for digest and inventory")
+	compileMS := flags.Int64("compile-ms", 0, "CI-observed compile milliseconds")
 	buildMS := flags.Int64("build-ms", 0, "CI-observed build milliseconds")
 	testMS := flags.Int64("test-ms", 0, "CI-observed test milliseconds")
 	conformanceMS := flags.Int64("conformance-ms", 0, "CI-observed conformance milliseconds")
@@ -47,7 +105,7 @@ func run(args []string) error {
 	if *sourcePath == "" || *contractPath == "" || *casePath == "" || *outPath == "" {
 		return fmt.Errorf("source, contract, case, and output-dir are required")
 	}
-	return evaluateOne(*sourcePath, *contractPath, *casePath, *outPath, *treeRoot, runner.RuntimeMeasurements{BuildMS: *buildMS, TestMS: *testMS, ConformanceMS: *conformanceMS})
+	return evaluateOne(*sourcePath, *contractPath, *casePath, *outPath, *treeRoot, runner.RuntimeMeasurements{CompileMS: *compileMS, BuildMS: *buildMS, TestMS: *testMS, ConformanceMS: *conformanceMS})
 }
 
 func conformance(args []string) error {
@@ -59,6 +117,7 @@ func conformance(args []string) error {
 	outPath := flags.String("output-dir", "", "empty caller-owned output directory")
 	treeRoot := flags.String("tree-root", ".", "input tree root for digest and inventory")
 	buildMS := flags.Int64("build-ms", 0, "CI-observed build milliseconds")
+	compileMS := flags.Int64("compile-ms", 0, "CI-observed compile milliseconds")
 	testMS := flags.Int64("test-ms", 0, "CI-observed test milliseconds")
 	if err := flags.Parse(args); err != nil {
 		return err
@@ -102,7 +161,7 @@ func conformance(args []string) error {
 			return err
 		}
 		casePath := filepath.Join(filepath.Dir(*corpusPath), filepath.FromSlash(entry.Path))
-		measurements := runner.RuntimeMeasurements{BuildMS: *buildMS, TestMS: *testMS, ConformanceMS: time.Since(start).Milliseconds()}
+		measurements := runner.RuntimeMeasurements{CompileMS: *compileMS, BuildMS: *buildMS, TestMS: *testMS, ConformanceMS: time.Since(start).Milliseconds()}
 		plan, receipt, err := evaluateCaseFiles(*sourcePath, *contractPath, casePath, caseOut, absoluteTree, measurements)
 		if err != nil {
 			return err
