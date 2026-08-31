@@ -75,6 +75,9 @@ func VerifyProcessAuthority(contract ProcessAuthorityContract, evidence GitHubPr
 		guardUnknowns = append(guardUnknowns, detail)
 		result.Unknowns = append(result.Unknowns, detail)
 	}
+	addNonGuardUnknown := func(detail UnknownDetail) {
+		result.Unknowns = append(result.Unknowns, detail)
+	}
 
 	rootSHA := processFieldOne(contract, "bootstrap_root")
 	rootIndex, rootObserved := commitIndexes[rootSHA]
@@ -153,7 +156,7 @@ func VerifyProcessAuthority(contract ProcessAuthorityContract, evidence GitHubPr
 	}
 
 	v010OK := verifyHistoricalRelease(contract, tags, releases, addGuardRefutation, addGuardUnknown)
-	durableReleaseState := verifyDurableRelease(contract, evidence.Phase, tags, releases, prs, commits, addGuardRefutation, addGuardUnknown)
+	durableReleaseState := verifyDurableRelease(contract, evidence.Phase, tags, releases, prs, commits, addGuardRefutation, addNonGuardUnknown)
 
 	postGuard := 0
 	guardPR := prs[parseProcessInt(contract, "guard_pr_number")]
