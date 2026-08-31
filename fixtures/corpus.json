@@ -1,0 +1,13 @@
+{
+  "schema": "gooo/causal-verification-runner/corpus/v1",
+  "corpus_id": "causal-verification-runner-conformance-v1",
+  "cases": [
+    {"ordinal":1,"case_id":"safe-reuse","path":"cases/safe-reuse.json","expected":"CLOSED"},
+    {"ordinal":2,"case_id":"transitive-impact","path":"cases/transitive-impact.json","expected":"CLOSED"},
+    {"ordinal":3,"case_id":"unknown-edge-full-fallback","path":"cases/unknown-edge-full-fallback.json","expected":"UNKNOWN"},
+    {"ordinal":4,"case_id":"stale-proof-rejection","path":"cases/stale-proof-rejection.json","expected":"REFUTED"},
+    {"ordinal":5,"case_id":"hidden-counterexample","path":"cases/hidden-counterexample.json","expected":"REFUTED"},
+    {"ordinal":6,"case_id":"cache-hit-only","path":"cases/cache-hit-only.json","expected":"REFUTED"}
+  ]
+}
+

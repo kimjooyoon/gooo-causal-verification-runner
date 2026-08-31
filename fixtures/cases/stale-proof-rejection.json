@@ -1,0 +1,25 @@
+{
+  "schema":"gooo/causal-verification-runner/case/v1",
+  "case_id":"stale-proof-rejection",
+  "description":"A proof with a stale scenario identity is rejected and the test is executed again.",
+  "change_claim":{"claim_id":"claim-stale-proof","changed_predicates":["predicate:root"],"source_digest":"$SOURCE_DIGEST","semantic_digest":"$SEMANTIC_DIGEST"},
+  "semantic_graph":{"schema":"gooo-graph/v1","graph_id":"graph-stale-proof","source_digest":"$SOURCE_DIGEST","semantic_digest":"$SEMANTIC_DIGEST","graph_digest":"$GRAPH_DIGEST","predicates":["predicate:root","predicate:stable"],"edges":[
+    {"edge_id":"edge-root-test","from":"predicate:root","to":"test:root","kind":"predicate-to-test","status":"KNOWN"},
+    {"edge_id":"edge-stable-test","from":"predicate:stable","to":"test:stable","kind":"predicate-to-test","status":"KNOWN"}
+  ]},
+  "tests":[
+    {"test_id":"test_root","target_node":"test:root","command":["go","test","./...","-run","TestRoot"],"observation":{"status":"PASS","wall_ms":20,"peak_rss_kib":130,"result_digest":"sha256:3333333333333333333333333333333333333333333333333333333333333333"}},
+    {"test_id":"test_stable","target_node":"test:stable","command":["go","test","./...","-run","TestStable"],"observation":{"status":"PASS","wall_ms":21,"peak_rss_kib":131,"result_digest":"sha256:4444444444444444444444444444444444444444444444444444444444444444"}}
+  ],
+  "reusable_proofs":[
+    {"proof_id":"proof-stale-scenario","test_id":"test_stable","source_digest":"$SOURCE_DIGEST","source_tree_digest":"$SOURCE_TREE_DIGEST","semantic_digest":"$SEMANTIC_DIGEST","graph_digest":"$GRAPH_DIGEST","toolchain_digest":"$TOOLCHAIN_DIGEST","scenario_digest":"sha256:9999999999999999999999999999999999999999999999999999999999999999","test_inventory_digest":"$TEST_INVENTORY_DIGEST","command_digest":"$COMMAND_DIGEST","terminal_result":"PASS","result_digest":"sha256:4444444444444444444444444444444444444444444444444444444444444444","release":{"provider":"github","repository":"kimjooyoon/gooo-causal-verification-runner","release_id":1,"tag":"v0.1.0","self_asserted_immutable":true,"platform_immutable":true,"asset_digest":"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","asset_name":"gooo-causal-verification-runner-v0.1.0.tar.gz"}}
+  ],
+  "full_oracle":{"oracle_id":"oracle-stale-proof","independent":true,"digest":"$FULL_ORACLE_DIGEST","results":[
+    {"test_id":"test_root","status":"PASS","result_digest":"sha256:3333333333333333333333333333333333333333333333333333333333333333"},
+    {"test_id":"test_stable","status":"PASS","result_digest":"sha256:4444444444444444444444444444444444444444444444444444444444444444"}
+  ]},
+  "performance_pair":{"before":{"source_digest":"$SOURCE_DIGEST","toolchain_digest":"$TOOLCHAIN_DIGEST","scenario_digest":"$SCENARIO_DIGEST","wall_ms":110,"peak_rss_kib":205},"after":{"source_digest":"$SOURCE_DIGEST","toolchain_digest":"$TOOLCHAIN_DIGEST","scenario_digest":"$SCENARIO_DIGEST","wall_ms":112,"peak_rss_kib":208}},
+  "counterexamples":[],"cache_hit":true,
+  "expected":{"decision":"REFUTED","selection_mode":"CAUSAL_SELECT","total_tests":2,"selected":2,"executed":2,"reused":0,"full_oracle_executed":2,"failures":0,"unknowns":0,"avoided_executions":0,"invalidated_edge_count":1}
+}
+

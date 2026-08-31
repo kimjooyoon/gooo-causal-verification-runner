@@ -1,0 +1,79 @@
+name: Causal verification runner conformance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    env:
+      CI_OUTPUT_NAME: gooo-causal-verification-runner-${{ github.run_id }}
+    steps:
+      - name: Check out the subject
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install Go 1.27
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.27.0
+          cache: false
+
+      - name: Bind the CI toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(go env GOVERSION)" = "go1.27.0"
+          test "$(go env GOOS)" = "linux"
+          test "$(go env GOARCH)" = "amd64"
+
+      - name: Verify formatting without writing the checkout
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -z "$(gofmt -l $(git ls-files '*.go'))"
+
+      - name: Measure the CI build
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root="$RUNNER_TEMP/$CI_OUTPUT_NAME"
+          mkdir -p "$root"
+          scripts/measure-command.sh "$root/build-observation.json" "$root/gooo-causal-verification-runner" "$root/build.log" "build-${GITHUB_RUN_ID}" \
+            go build -trimpath -o "$root/gooo-causal-verification-runner" ./cmd/gooo-causal-verification-runner
+
+      - name: Vet in CI
+        run: go vet ./...
+
+      - name: Measure the CI test suite
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root="$RUNNER_TEMP/$CI_OUTPUT_NAME"
+          scripts/measure-command.sh "$root/test-observation.json" "$root/test-result" "$root/test.log" "test-${GITHUB_RUN_ID}" \
+            go test -json ./...
+
+      - name: Run fixture conformance and full-oracle comparisons
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root="$RUNNER_TEMP/$CI_OUTPUT_NAME"
+          build_ms=$(jq -r '.wall_ms' "$root/build-observation.json")
+          test_ms=$(jq -r '.wall_ms' "$root/test-observation.json")
+          scripts/ci-conformance.sh "$GITHUB_WORKSPACE" "$root/gooo-causal-verification-runner" "$root/cases" "$build_ms" "$test_ms"
+          cat "$root/cases/ci-summary.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload machine receipts and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gooo-causal-verification-runner-${{ github.run_id }}
+          path: ${{ runner.temp }}/${{ env.CI_OUTPUT_NAME }}
+          if-no-files-found: error

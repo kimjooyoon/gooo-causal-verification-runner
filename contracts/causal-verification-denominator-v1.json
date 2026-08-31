@@ -1,0 +1,23 @@
+{
+  "schema": "gooo/causal-verification-runner/denominator/v1",
+  "denominator_id": "causal-verification-runner-v1",
+  "fixed_denominator": 12,
+  "precedence": ["REFUTED", "UNKNOWN", "CLOSED"],
+  "proof_totals": {"FOUNDATION": 4, "COHERENCE": 4, "REGRESSION": 4},
+  "indicator_totals": {"DRIVER": 4, "OUTCOME": 4, "GUARDRAIL": 4},
+  "cells": [
+    {"ordinal":1,"id":"CHANGE_CLAIM","activity":"ObserveChangeClaim","stage":"CHANGE_CLAIM","step":"bind-change-claim","proof_choice":"FOUNDATION","indicator_class":"DRIVER"},
+    {"ordinal":2,"id":"SEMANTIC_GRAPH","activity":"BindSemanticGraph","stage":"SEMANTIC_GRAPH","step":"bind-released-graph","proof_choice":"FOUNDATION","indicator_class":"DRIVER"},
+    {"ordinal":3,"id":"AFFECTED_PREDICATES","activity":"DeriveAffectedSemanticPredicates","stage":"AFFECTED_SEMANTIC_PREDICATES","step":"compute-transitive-closure","proof_choice":"FOUNDATION","indicator_class":"OUTCOME"},
+    {"ordinal":4,"id":"UNKNOWN_EDGES","activity":"DetectUnknownImpactEdges","stage":"AFFECTED_SEMANTIC_PREDICATES","step":"detect-unknown-impact-edge","proof_choice":"FOUNDATION","indicator_class":"GUARDRAIL"},
+    {"ordinal":5,"id":"REQUIRED_TESTS","activity":"DeriveRequiredTests","stage":"REQUIRED_TESTS","step":"map-predicates-to-tests","proof_choice":"COHERENCE","indicator_class":"OUTCOME"},
+    {"ordinal":6,"id":"REUSABLE_PROOFS","activity":"VerifyReusableProofs","stage":"REUSABLE_PROOFS","step":"verify-exact-proof-identity","proof_choice":"COHERENCE","indicator_class":"DRIVER"},
+    {"ordinal":7,"id":"STALE_PROOFS","activity":"RejectStaleProofs","stage":"REUSABLE_PROOFS","step":"reject-stale-or-nonimmutable-proof","proof_choice":"COHERENCE","indicator_class":"GUARDRAIL"},
+    {"ordinal":8,"id":"EXECUTION_PLAN","activity":"PlanExecution","stage":"EXECUTED_TESTS","step":"plan-execute-or-reuse","proof_choice":"COHERENCE","indicator_class":"OUTCOME"},
+    {"ordinal":9,"id":"EXECUTED_TESTS","activity":"ObserveExecutedTests","stage":"EXECUTED_TESTS","step":"bind-current-test-observations","proof_choice":"REGRESSION","indicator_class":"OUTCOME"},
+    {"ordinal":10,"id":"FULL_ORACLE","activity":"ExecuteFullOracle","stage":"INDEPENDENT_FULL_ORACLE_COMPARISON","step":"bind-independent-full-oracle","proof_choice":"REGRESSION","indicator_class":"DRIVER"},
+    {"ordinal":11,"id":"ORACLE_COMPARISON","activity":"CompareSelectiveWithFullOracle","stage":"INDEPENDENT_FULL_ORACLE_COMPARISON","step":"compare-selective-and-full-results","proof_choice":"REGRESSION","indicator_class":"GUARDRAIL"},
+    {"ordinal":12,"id":"RECEIPT","activity":"EmitCausalVerificationReceipt","stage":"RECEIPT","step":"emit-plan-and-receipt","proof_choice":"REGRESSION","indicator_class":"GUARDRAIL"}
+  ]
+}
+

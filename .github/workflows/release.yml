@@ -1,0 +1,101 @@
+name: Prepare immutable v0.1.0 release assets
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Annotated tag whose source assets should be prepared"
+        required: true
+        default: "v0.1.0"
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Build caller-owned release assets and exact digests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          tag="${{ inputs.tag || github.ref_name }}"
+          test "$tag" = "v0.1.0"
+          tag_object_sha=$(git rev-parse "$tag")
+          test "$(git cat-file -t "$tag_object_sha")" = "tag"
+          commit_sha=$(git rev-parse "$tag^{commit}")
+          archive="gooo-causal-verification-runner-${tag}.tar.gz"
+          git archive --format=tar.gz --prefix="gooo-causal-verification-runner-${tag}/" "$commit_sha" > "$RUNNER_TEMP/$archive"
+          asset_digest="sha256:$(sha256sum "$RUNNER_TEMP/$archive" | awk '{print $1}')"
+          asset_size=$(wc -c < "$RUNNER_TEMP/$archive" | tr -d ' ')
+          printf '%s  %s\n' "$asset_digest" "$archive" > "$RUNNER_TEMP/SHA256SUMS"
+          jq -S -n \
+            --arg tag "$tag" \
+            --arg tag_object_sha "$tag_object_sha" \
+            --arg commit_sha "$commit_sha" \
+            --arg archive "$archive" \
+            --arg asset_digest "$asset_digest" \
+            --argjson asset_size "$asset_size" \
+            '{schema:"gooo/causal-verification-runner/release-manifest/v1",tag:$tag,tag_object_sha:$tag_object_sha,commit_sha:$commit_sha,archive:$archive,asset_size_bytes:$asset_size,asset_digest:$asset_digest,self_asserted_immutable:true,external_platform_authority:"github_release_api.immutable"}' \
+            > "$RUNNER_TEMP/release-manifest.json"
+          manifest_digest="sha256:$(sha256sum "$RUNNER_TEMP/release-manifest.json" | awk '{print $1}')"
+          printf '%s  %s\n' "$manifest_digest" release-manifest.json >> "$RUNNER_TEMP/SHA256SUMS"
+          cat "$RUNNER_TEMP/release-manifest.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish the immutable release without rewriting an existing one
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          tag="${{ inputs.tag || github.ref_name }}"
+          archive="gooo-causal-verification-runner-${tag}.tar.gz"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "release already exists; auditing it without rewriting assets"
+          else
+            gh release create "$tag" --verify-tag --title "gooo-causal-verification-runner $tag" \
+              --notes "Immutable source asset bound to annotated tag $(git rev-parse "$tag^{commit}")." \
+              "$RUNNER_TEMP/$archive" "$RUNNER_TEMP/SHA256SUMS" "$RUNNER_TEMP/release-manifest.json"
+          fi
+
+      - name: Audit external release immutability and asset digests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          tag="${{ inputs.tag || github.ref_name }}"
+          release="$RUNNER_TEMP/release.json"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/$tag" > "$release"
+          jq -e --arg tag "$tag" '.tag_name == $tag and .draft == false and .prerelease == false and .immutable == true' "$release" >/dev/null
+          archive="gooo-causal-verification-runner-${tag}.tar.gz"
+          audit_dir="$RUNNER_TEMP/release-audit"
+          mkdir -p "$audit_dir"
+          for asset in "$archive" SHA256SUMS release-manifest.json; do
+            curl --fail --location --retry 3 --silent --show-error "https://github.com/${GITHUB_REPOSITORY}/releases/download/$tag/$asset" --output "$audit_dir/$asset"
+            expected=$(jq -r --arg name "$asset" '.assets[] | select(.name == $name) | .digest' "$release")
+            actual="sha256:$(sha256sum "$audit_dir/$asset" | awk '{print $1}')"
+            test -n "$expected" && test "$expected" = "$actual"
+          done
+          jq -e --arg tag "$tag" --arg commit "$(git rev-parse "$tag^{commit}")" --arg object "$(git rev-parse "$tag")" \
+            '.tag == $tag and .commit_sha == $commit and .tag_object_sha == $object and .immutable == true' \
+            "$audit_dir/release-manifest.json" >/dev/null
+          cat "$release" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload audited release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: gooo-causal-verification-runner-v0.1.0-release-assets
+          path: |
+            ${{ runner.temp }}/gooo-causal-verification-runner-v0.1.0.tar.gz
+            ${{ runner.temp }}/SHA256SUMS
+            ${{ runner.temp }}/release-manifest.json
+          if-no-files-found: error

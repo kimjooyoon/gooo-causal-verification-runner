@@ -1,0 +1,12 @@
+{
+  "schema":"gooo/causal-verification-runner/bootstrap/v1",
+  "repository":"kimjooyoon/gooo-causal-verification-runner",
+  "bootstrap_branch":"main",
+  "bootstrap_commit":"dfdb08c",
+  "bootstrap_paths":[".gitignore","LICENSE","README.md"],
+  "main_was_bootstrapped_with_exactly_three_files":true,
+  "feature_branch":"implementation",
+  "feature_pr":"PENDING_HUMAN_CONTROLLED_SINGLE_PR",
+  "remote_mutation_performed":false
+}
+
