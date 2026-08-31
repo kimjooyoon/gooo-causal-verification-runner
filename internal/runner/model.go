@@ -344,6 +344,8 @@ type Receipt struct {
 	Activities                 []ActivityDecision    `json:"activities"`
 	AffectedSemanticPredicates []string              `json:"affected_semantic_predicates"`
 	RequiredTests              []string              `json:"required_tests"`
+	Tests                      []TestDecision        `json:"tests"`
+	InvalidationFrontier       []GraphEdge           `json:"invalidation_frontier"`
 	Metrics                    Metrics               `json:"metrics"`
 	Unknowns                   []UnknownDetail       `json:"unknowns"`
 	Refutations                []string              `json:"refutations"`

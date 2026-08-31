@@ -204,6 +204,7 @@ func EvaluateCase(value Case, source SourceSpec, sourceDigest, treeDigest, contr
 		Contract:           ArtifactBinding{Path: "contracts/causal-verification-denominator-v1.json", Digest: contractDigest},
 		SemanticGraph:      ArtifactBinding{Path: "input.semantic-graph", Digest: graphDigest}, FullOracle: ArtifactBinding{Path: "input.full-oracle", Digest: oracleDigest},
 		ScenarioDigest: scenarioDigest, Activities: activities, AffectedSemanticPredicates: affectedPredicates(affectedNodes), RequiredTests: requiredTests,
+		Tests: testDecisions, InvalidationFrontier: frontier,
 		Metrics: metrics, Unknowns: unknowns, Refutations: refutations, FullOracleComparison: oracleComparison, Performance: performance,
 		Authority: plan.Authority, RootReadmeExcluded: inventory.RootReadmeExcluded,
 	}
@@ -385,7 +386,7 @@ func refutedProof(result ProofDecision, reason string) ProofDecision {
 }
 
 func compareWithFullOracle(decisions []TestDecision, tests []TestSpec, oracle FullOracle, current Bindings) (OracleComparison, []UnknownDetail, []string) {
-	comparison := OracleComparison{State: Closed, Reason: "SELECTIVE_RESULT_EQUALS_INDEPENDENT_FULL_ORACLE", Independent: oracle.Independent, OracleID: oracle.OracleID, OracleDigest: current.OracleDigest}
+	comparison := OracleComparison{State: Closed, Reason: "SELECTIVE_RESULT_EQUALS_INDEPENDENT_FULL_ORACLE", Independent: oracle.Independent, OracleID: oracle.OracleID, OracleDigest: current.OracleDigest, Mismatches: []OracleMismatch{}}
 	unknowns := make([]UnknownDetail, 0)
 	refutations := make([]string, 0)
 	if !oracle.Independent {
