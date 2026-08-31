@@ -39,8 +39,8 @@ jq -S \
   --argjson executed "$executed" --argjson reused "$reused" --argjson failed "$failed" --argjson unknown "$unknown" \
   --argjson files "$files" --argjson dirs "$dirs" --argjson outputs "$files" --argjson bytes "$bytes" \
   --slurpfile process "$process" \
-  '. + {
-    causal_verifier: {activities:$activities,cases:6,decisions:{CLOSED:2,UNKNOWN:1,REFUTED:3},fixture_metrics:.cases},
+  '. as $root | $root + {
+    causal_verifier: {activities:$activities,cases:6,decisions:{CLOSED:2,UNKNOWN:1,REFUTED:3},fixture_metrics:$root.cases},
     process_guard: {cells:$process_cells,cases:$process_cases,decision:$process[0].decision,current_guard_decision:$process[0].current_guard_decision,counts:$process[0].counts,historical_counterexamples:$process[0].historical_counterexamples},
     inventory:$inventory,
     artifacts:{files:$files,dirs:$dirs,outputs:$outputs,bytes:$bytes},
