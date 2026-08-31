@@ -361,7 +361,8 @@ func evaluateProof(proof ReusableProof, testID string, current Bindings) ProofDe
 		if check.got == "" {
 			result.State = Unknown
 			result.Reason = "REUSABLE_PROOF_FIELD_MISSING_" + check.name
-			result.Unknown = unknownDetail("REUSABLE_PROOFS", "verify-proof-identity", result.Reason, "DIRECT_MISSING", "OBTAIN_EXACT_IMMUTABLE_PROOF", []string{"proof:" + proof.ProofID, strings.ToLower(check.name)})
+			detail := unknownDetail("REUSABLE_PROOFS", "verify-proof-identity", result.Reason, "DIRECT_MISSING", "OBTAIN_EXACT_IMMUTABLE_PROOF", []string{"proof:" + proof.ProofID, strings.ToLower(check.name)})
+			result.Unknown = &detail
 			return result
 		}
 		if check.got != check.want {

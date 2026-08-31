@@ -72,7 +72,7 @@ func ParseSource(path string) (SourceSpec, string, error) {
 
 func BuildSemanticIR(sourcePath string, spec SourceSpec, sourceDigest string) (SemanticIR, error) {
 	ir := SemanticIR{
-		Schema: IRScheme, Protocol: ProtocolSchema, SourcePath: sourcePath,
+		Schema: IRSchema, Protocol: ProtocolSchema, SourcePath: sourcePath,
 		SourceDigest: sourceDigest, Activities: spec.Activities,
 	}
 	copyValue, err := canonicalCopy(ir, func(item *SemanticIR) { item.Digest = "" })
