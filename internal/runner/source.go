@@ -16,6 +16,8 @@ func ParseSource(path string) (SourceSpec, string, error) {
 		return SourceSpec{}, "", err
 	}
 	var spec SourceSpec
+	seenPackage := false
+	seenNamespace := false
 	for lineNumber, raw := range strings.Split(string(data), "\n") {
 		line := strings.TrimSpace(raw)
 		if line == "" || strings.HasPrefix(line, "//") {
@@ -24,14 +26,16 @@ func ParseSource(path string) (SourceSpec, string, error) {
 		fields := strings.Fields(line)
 		switch fields[0] {
 		case "package":
-			if len(fields) != 2 {
+			if len(fields) != 2 || seenPackage {
 				return SourceSpec{}, "", fmt.Errorf("source line %d: malformed package", lineNumber+1)
 			}
+			seenPackage = true
 			spec.Package = fields[1]
 		case "namespace":
-			if len(fields) != 2 {
+			if len(fields) != 2 || seenNamespace {
 				return SourceSpec{}, "", fmt.Errorf("source line %d: malformed namespace", lineNumber+1)
 			}
+			seenNamespace = true
 			spec.Namespace = fields[1]
 		case "entity":
 			continue
