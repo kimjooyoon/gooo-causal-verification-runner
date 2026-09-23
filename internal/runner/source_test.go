@@ -8,8 +8,16 @@ import (
 
 func TestParseSourceRejectsDuplicateSingletons(t *testing.T) {
 	cases := map[string]string{
-		"package": "package one\npackage two\nnamespace gooo://causal-verification/v1\nactivity Observe() -> Result\n",
-		"namespace": "package one\nnamespace gooo://first\nnamespace gooo://second\nactivity Observe() -> Result\n",
+		"package": `package one
+package two
+namespace gooo://causal-verification/v1
+activity Observe() -> Result
+`,
+		"namespace": `package one
+namespace gooo://first
+namespace gooo://second
+activity Observe() -> Result
+`,
 	}
 	for name, source := range cases {
 		t.Run(name, func(t *testing.T) {
